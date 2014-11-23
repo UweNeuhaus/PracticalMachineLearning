@@ -1,0 +1,105 @@
+---
+title: "Practical Machine Learning: "
+author: "Uwe Neuhaus"
+date: "23.11.2014"
+output: html_document
+---
+
+### Summary
+In this project the goal is to automatically identify, which specific variant of a dumbbell biceps curl is performed by a participant. The available data come from four movement sensors positioned on the arm, forearm, and belt of the participant, and from a sensor on the dumbbell itself. (More detailed information and the training data set can be found here: http://groupware.les.inf.puc-rio.br/har). To predict the class of biceps curl a model was trained using random forrests. Due to memory and running time restrictions, only 10 of the original 160 variables and only about 30% of the available data could be used for training. Still, the resulting model delivers very good prediction results with an out of sample accuracy of 97%.
+
+
+### Preliminary measures
+```{r message = FALSE}
+# Load the necessary libraries
+library(caret)
+library(rattle)
+# Set seed value for random generator to make results repeatable
+set.seed(12345)
+```
+
+### Loading the data
+First, a data directory is created. Then, the training and test data is downloaded and stored in the data directory. These steps are skipped if the directory already exists and the data has been downloaded previously. Finally, the files are read into the variables data.training and data.test.
+```{r}
+URL.training <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+URL.test <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+if (!file.exists("./data")) {
+    dir.create("data")
+}
+if (!file.exists("./data/data.training.csv")) {
+    download.file(url = URL.training, destfile = "./data/data.training.csv", method = "wget")    
+}
+if (!file.exists("./data/data.test.csv")) {
+    download.file(url = URL.test, destfile = "./data/data.test.csv", method = "wget")    
+}
+data.training <- read.csv("./data/data.training.csv", header=TRUE)
+data.test <- read.csv("./data/data.test.csv", header=TRUE)
+```
+
+### Cleaning the data
+The training data contains 19,622, the test data 20 oberservations. Every observation is described by 160 variables. All variables are identical in both sets, except for the last one. The last variable in the training data is "classe". It is a factor variable that describes the fashion of dumbbell biceps curls performed (class "A" to "E"). The last variable in the test data is "problem_id", a numerical value specifying the number of the test case (1 to 20).
+
+Many variables in the test set contain only NA values. These variables cannot help predict the class of curl performed and are therefore deleted to speed up the learning process.
+```{r}
+# Keep only the variables that do not only contain NA values in the test set.
+data.training <- data.training[, colSums(is.na(data.test)) != nrow(data.test)]
+data.test <- data.test[, colSums(is.na(data.test)) != nrow(data.test)]
+```
+
+Of the remaining 60 variables the first seven variables have to be deleted as well as they do not provide information about the movement performed, but about the order of the excercises (variable 1), the names of the users (variable 2), and the timestamps and windows of data recording. Though some of this information could be useful for the specific prediction task (specifically variable 1), the results would not be generalizable.
+```{r}
+# Keep only variables related to sensor data
+data.training = data.training[, 8:length(data.training)]
+data.test = data.test[, 8:length(data.test)]
+```
+
+### Identify the most important variables
+At this point, still 53 variables remain. Now a relatively small subset (10%) of the training data is used to identify the most important variables. With this data set and all variables a model is trained using random forrests. The function varImp() calculates the importance of the variables for the model. The 10 most important variables are selected for the main training process.
+```{r message = FALSE}
+inPreTrain <- createDataPartition(y = data.training$classe, p = 0.1, list = FALSE)
+preTrain <- data.training[inPreTrain, ]
+train <- data.training[-inPreTrain, ]
+# Train a model using random forrests with all variables (number of trees = 100)
+modFit <- train(classe ~ ., data = preTrain, method="rf" ,prox = TRUE, ntre=100)
+varImp(modFit)
+```
+
+### Train a model for prediction
+From the remaing 90% of training data two subsets are created. 30% of the data is used to train the model (with the 10 most important variables), the remaining 70% are later used to determine the out of sample error. To use only 30% of the remaining training data was necessary as the available computer hardware could not handle greater sets due to memory restrictions.
+
+Again random forrests are used as the deliver very robust classification results and are computationally comparatively efficient. Furthermore, random forrests provide a form of inbuild cross validation, as they randomly select values for the creation of their trees.
+```{r}
+inMainTrain <- createDataPartition(y = train$classe, p = 0.3, list = FALSE)
+mainTrain <- train[inMainTrain, ]
+validation <- train[-inMainTrain, ]
+# Train a model using random forrests with the 10 most important variables
+# (number of trees = 100)
+modFit <- train(classe ~ roll_belt + pitch_forearm + magnet_dumbbell_y + roll_forearm 
+   + pitch_belt + magnet_dumbbell_z + yaw_belt + accel_dumbbell_y + accel_forearm_x
+   + magnet_dumbbell_x, data = mainTrain, method="rf", prox=TRUE, ntree=100)
+```
+
+## In of sample error
+To get an impression how good the model has learned, the confusion matrix for the main training set is calculated. For this purpose, the model is used to make predictions for the training data. These predictions are then compared with the real values of the variable "classe".
+```{r}
+pred <- predict(modFit, mainTrain)
+mainTrain$predRight <- pred == mainTrain$classe
+confusionMatrix(pred, mainTrain$classe)
+```
+Even with only 30% of the remaining training data and only 10 variables the random forrest algorithm was able to learn all training examples perfectly.
+
+### Out of sample error
+Finally, the out of sample error is calculated similarily. The only difference is that now the validation data is used and not the training data.
+```{r}
+pred <- predict(modFit, validation)
+validation$predRight <- pred == validation$classe
+confusionMatrix(pred, validation$classe)
+```
+The model achieves excellent results with the validation data as well. The overall accuracy is 97%. If more computing power were available, more variables and a larger training set could have been used and the value might have been still a little better.
+
+### Prediction for the original tests
+Now the model can be used to predict the class of dumbbell biceps curls given in the original test data of the assignments. 
+```{r}
+predict(modFit, data.test)
+```
+In all 20 cases the predictions were correct.
