@@ -67,7 +67,6 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 <pre class="r"><code># Load the necessary libraries
 library(caret)
 library(rattle)
-
 # Set seed value for random generator to make results repeatable
 set.seed(12345)</code></pre>
 </div>
@@ -103,7 +102,7 @@ data.test = data.test[, 8:length(data.test)]</code></pre>
 <div id="identify-the-most-important-variables" class="section level3">
 <h3>Identify the most important variables</h3>
 <p>At this point, still 53 variables remain. Now a relatively small subset (10%) of the training data is used to identify the most important variables. With this data set and all variables a model is trained using random forrests. The function varImp() calculates the importance of the variables for the model. The 10 most important variables are selected for the main training process.</p>
-<pre class="r"><code>inPreTrain &lt;- createDataPartition(y = data.training$classe, p = 0.01, list = FALSE)
+<pre class="r"><code>inPreTrain &lt;- createDataPartition(y = data.training$classe, p = 0.1, list = FALSE)
 preTrain &lt;- data.training[inPreTrain, ]
 train &lt;- data.training[-inPreTrain, ]
 # Train a model using random forrests with all variables (number of trees = 100)
@@ -113,33 +112,33 @@ varImp(modFit)</code></pre>
 ## 
 ##   only 20 most important variables shown (out of 52)
 ## 
-##                   Overall
-## roll_belt          100.00
-## roll_dumbbell       47.31
-## magnet_dumbbell_y   39.17
-## pitch_forearm       37.64
-## magnet_belt_y       24.87
-## magnet_arm_x        22.99
-## accel_belt_z        21.41
-## roll_arm            19.75
-## accel_forearm_x     17.20
-## magnet_arm_y        17.17
-## yaw_belt            16.95
-## gyros_forearm_z     16.34
-## pitch_dumbbell      16.12
-## magnet_dumbbell_x   15.66
-## accel_arm_x         15.58
-## magnet_belt_x       14.56
-## magnet_belt_z       14.09
-## magnet_dumbbell_z   13.51
-## gyros_dumbbell_y    12.97
-## pitch_belt          12.96</code></pre>
+##                      Overall
+## roll_belt             100.00
+## pitch_forearm          58.03
+## magnet_dumbbell_z      57.63
+## yaw_belt               46.84
+## pitch_belt             37.96
+## magnet_dumbbell_y      33.99
+## accel_belt_z           27.34
+## roll_forearm           24.66
+## roll_dumbbell          20.70
+## accel_forearm_x        18.80
+## magnet_dumbbell_x      18.77
+## accel_dumbbell_y       18.14
+## accel_dumbbell_z       16.99
+## magnet_belt_z          15.49
+## magnet_belt_y          13.49
+## gyros_dumbbell_y       13.00
+## magnet_forearm_z       11.85
+## gyros_belt_z           10.70
+## yaw_arm                10.15
+## total_accel_dumbbell   10.08</code></pre>
 </div>
 <div id="train-a-model-for-prediction" class="section level3">
 <h3>Train a model for prediction</h3>
 <p>From the remaing 90% of training data two subsets are created. 30% of the data is used to train the model (with the 10 most important variables), the remaining 70% are later used to determine the out of sample error. To use only 30% of the remaining training data was necessary as the available computer hardware could not handle greater sets due to memory restrictions.</p>
 <p>Again random forrests are used as the deliver very robust classification results and are computationally comparatively efficient. Furthermore, random forrests provide a form of inbuild cross validation, as they randomly select values for the creation of their trees.</p>
-<pre class="r"><code>inMainTrain &lt;- createDataPartition(y = train$classe, p = 0.03, list = FALSE)
+<pre class="r"><code>inMainTrain &lt;- createDataPartition(y = train$classe, p = 0.3, list = FALSE)
 mainTrain &lt;- train[inMainTrain, ]
 validation &lt;- train[-inMainTrain, ]
 # Train a model using random forrests with the 10 most important variables
@@ -157,18 +156,18 @@ confusionMatrix(pred, mainTrain$classe)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
-## Prediction   A   B   C   D   E
-##          A 166   0   0   0   0
-##          B   0 113   0   0   0
-##          C   0   0 102   0   0
-##          D   0   0   0  96   0
-##          E   0   0   0   0 108
+## Prediction    A    B    C    D    E
+##          A 1507    0    0    0    0
+##          B    0 1026    0    0    0
+##          C    0    0  924    0    0
+##          D    0    0    0  869    0
+##          E    0    0    0    0  974
 ## 
 ## Overall Statistics
 ##                                      
 ##                Accuracy : 1          
-##                  95% CI : (0.9937, 1)
-##     No Information Rate : 0.2838     
+##                  95% CI : (0.9993, 1)
+##     No Information Rate : 0.2843     
 ##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16  
 ##                                      
 ##                   Kappa : 1          
@@ -177,14 +176,14 @@ confusionMatrix(pred, mainTrain$classe)</code></pre>
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            1.0000   1.0000   1.0000   1.0000   1.0000
-## Specificity            1.0000   1.0000   1.0000   1.0000   1.0000
-## Pos Pred Value         1.0000   1.0000   1.0000   1.0000   1.0000
-## Neg Pred Value         1.0000   1.0000   1.0000   1.0000   1.0000
-## Prevalence             0.2838   0.1932   0.1744   0.1641   0.1846
-## Detection Rate         0.2838   0.1932   0.1744   0.1641   0.1846
-## Detection Prevalence   0.2838   0.1932   0.1744   0.1641   0.1846
-## Balanced Accuracy      1.0000   1.0000   1.0000   1.0000   1.0000</code></pre>
+## Sensitivity            1.0000   1.0000   1.0000    1.000   1.0000
+## Specificity            1.0000   1.0000   1.0000    1.000   1.0000
+## Pos Pred Value         1.0000   1.0000   1.0000    1.000   1.0000
+## Neg Pred Value         1.0000   1.0000   1.0000    1.000   1.0000
+## Prevalence             0.2843   0.1936   0.1743    0.164   0.1838
+## Detection Rate         0.2843   0.1936   0.1743    0.164   0.1838
+## Detection Prevalence   0.2843   0.1936   0.1743    0.164   0.1838
+## Balanced Accuracy      1.0000   1.0000   1.0000    1.000   1.0000</code></pre>
 <p>Even with only 30% of the remaining training data and only 10 variables the random forrest algorithm was able to learn all training examples perfectly.</p>
 <div id="out-of-sample-error" class="section level3">
 <h3>Out of sample error</h3>
@@ -196,40 +195,40 @@ confusionMatrix(pred, validation$classe)</code></pre>
 ## 
 ##           Reference
 ## Prediction    A    B    C    D    E
-##          A 4998  359   27   32   54
-##          B  156 2875  205   70  304
-##          C  118  233 2937  431  154
-##          D   62   65   91 2515  147
-##          E   24  114   25   39 2803
+##          A 3447   65    2    4    2
+##          B   24 2263   45    5   27
+##          C   26   53 2086   40   13
+##          D    3    6   22 1974   18
+##          E   15    4    0    2 2212
 ## 
 ## Overall Statistics
-##                                          
-##                Accuracy : 0.8561         
-##                  95% CI : (0.851, 0.8611)
-##     No Information Rate : 0.2844         
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16      
-##                                          
-##                   Kappa : 0.8179         
-##  Mcnemar's Test P-Value : &lt; 2.2e-16      
+##                                           
+##                Accuracy : 0.9696          
+##                  95% CI : (0.9664, 0.9725)
+##     No Information Rate : 0.2844          
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+##                                           
+##                   Kappa : 0.9615          
+##  Mcnemar's Test P-Value : &lt; 2.2e-16       
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.9328   0.7885   0.8941   0.8147   0.8096
-## Specificity            0.9650   0.9516   0.9398   0.9768   0.9869
-## Pos Pred Value         0.9137   0.7964   0.7583   0.8733   0.9328
-## Neg Pred Value         0.9731   0.9494   0.9767   0.9642   0.9584
+## Sensitivity            0.9807   0.9465   0.9680   0.9748   0.9736
+## Specificity            0.9917   0.9899   0.9871   0.9953   0.9979
+## Pos Pred Value         0.9793   0.9573   0.9405   0.9758   0.9906
+## Neg Pred Value         0.9923   0.9872   0.9932   0.9951   0.9941
 ## Prevalence             0.2844   0.1935   0.1744   0.1639   0.1838
-## Detection Rate         0.2653   0.1526   0.1559   0.1335   0.1488
-## Detection Prevalence   0.2904   0.1916   0.2056   0.1529   0.1595
-## Balanced Accuracy      0.9489   0.8701   0.9169   0.8958   0.8983</code></pre>
+## Detection Rate         0.2789   0.1831   0.1688   0.1597   0.1790
+## Detection Prevalence   0.2848   0.1913   0.1795   0.1637   0.1807
+## Balanced Accuracy      0.9862   0.9682   0.9775   0.9850   0.9858</code></pre>
 <p>The model achieves excellent results with the validation data as well. The overall accuracy is 97%. If more computing power were available, more variables and a larger training set could have been used and the value might have been still a little better.</p>
 </div>
 <div id="prediction-for-the-original-tests" class="section level3">
 <h3>Prediction for the original tests</h3>
 <p>Now the model can be used to predict the class of dumbbell biceps curls given in the original test data of the assignments.</p>
 <pre class="r"><code>predict(modFit, data.test)</code></pre>
-<pre><code>##  [1] B A A C A E D D A A B C B A E E A D A B
+<pre><code>##  [1] B A B A A E D D A A B C B A E E A B A B
 ## Levels: A B C D E</code></pre>
 <p>In all 20 cases the predictions were correct.</p>
 </div>
