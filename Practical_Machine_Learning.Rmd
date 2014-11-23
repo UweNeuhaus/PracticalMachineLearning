@@ -102,4 +102,4 @@ Now the model can be used to predict the class of dumbbell biceps curls given in
 ```{r}
 predict(modFit, data.test)
 ```
-In all 20 cases the predictions were correct.
+In all 20 cases the predictions were correct. 
